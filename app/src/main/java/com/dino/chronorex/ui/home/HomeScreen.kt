@@ -1,0 +1,628 @@
+package com.dino.chronorex.ui.home
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlin.math.roundToInt
+import com.dino.chronorex.ui.ChronoRexViewModelFactory
+import com.dino.chronorex.ui.calendar.CalendarUiState
+import com.dino.chronorex.ui.calendar.CalendarViewModel
+import com.dino.chronorex.ui.components.BottomQuickActionsBar
+import com.dino.chronorex.ui.components.ChronoRexAssistChip
+import com.dino.chronorex.ui.components.ChronoRexCard
+import com.dino.chronorex.ui.components.ChronoRexChipColors
+import com.dino.chronorex.ui.components.ChronoRexPrimaryButton
+import com.dino.chronorex.ui.quicklog.QuickLogState
+import com.dino.chronorex.ui.quicklog.QuickLogViewModel
+import com.dino.chronorex.ui.theme.spacing
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+
+@Composable
+fun HomeScreenRoute(
+    factory: ChronoRexViewModelFactory,
+    onNavigateCheckIn: () -> Unit,
+    onNavigateDetail: (LocalDate) -> Unit,
+    onNavigateInsights: () -> Unit,
+    onNavigateSettings: () -> Unit
+) {
+    val calendarViewModel: CalendarViewModel = viewModel(factory = factory)
+    val quickLogViewModel: QuickLogViewModel = viewModel(factory = factory)
+    val calendarState by calendarViewModel.state.collectAsState()
+    val quickLogState by quickLogViewModel.state.collectAsState()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f)) {
+            HomeScreen(
+                state = calendarState,
+                quickLogState = quickLogState,
+                onSelectDate = calendarViewModel::selectDate,
+                onResetToToday = calendarViewModel::resetToToday,
+                onNavigateCheckIn = onNavigateCheckIn,
+                onNavigateDetail = onNavigateDetail,
+                onNavigateInsights = onNavigateInsights,
+                onNavigateSettings = onNavigateSettings,
+                onLogSymptomQuick = { date -> quickLogViewModel.submitSymptom(date) },
+                onLogActivityQuick = { date -> quickLogViewModel.submitActivity(date) },
+                onMarkIllness = calendarViewModel::markIllness,
+                onMarkTravel = calendarViewModel::markTravel,
+                onUpdateSymptomName = quickLogViewModel::updateSymptomName,
+                onUpdateSymptomSeverity = quickLogViewModel::updateSymptomSeverity,
+                onUpdateSymptomNote = quickLogViewModel::updateSymptomNote,
+                onSubmitSymptom = { date -> quickLogViewModel.submitSymptom(date) },
+                onUpdateActivityType = quickLogViewModel::updateActivityType,
+                onUpdateActivityDuration = quickLogViewModel::updateActivityDuration,
+                onUpdateActivityPerceivedExhaustion = quickLogViewModel::updateActivityPerceivedExhaustion,
+                onUpdateActivityNote = quickLogViewModel::updateActivityNote,
+                onSubmitActivity = { date -> quickLogViewModel.submitActivity(date) }
+            )
+        }
+        BottomQuickActionsBar(
+            onLogSymptom = { quickLogViewModel.submitSymptom(calendarState.selectedDate) },
+            onLogActivity = { quickLogViewModel.submitActivity(calendarState.selectedDate) }
+        )
+    }
+}
+
+enum class QuickAction { LogSymptom, LogActivity, EditCheckIn, MarkIllness, MarkTravel }
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(
+    state: CalendarUiState,
+    quickLogState: QuickLogState,
+    onSelectDate: (LocalDate) -> Unit,
+    onResetToToday: () -> Unit,
+    onNavigateCheckIn: () -> Unit,
+    onNavigateDetail: (LocalDate) -> Unit,
+    onNavigateInsights: () -> Unit,
+    onNavigateSettings: () -> Unit,
+    onLogSymptomQuick: (LocalDate) -> Unit,
+    onLogActivityQuick: (LocalDate) -> Unit,
+    onMarkIllness: (LocalDate) -> Unit,
+    onMarkTravel: (LocalDate) -> Unit,
+    onUpdateSymptomName: (String) -> Unit,
+    onUpdateSymptomSeverity: (Int) -> Unit,
+    onUpdateSymptomNote: (String) -> Unit,
+    onSubmitSymptom: (LocalDate) -> Unit,
+    onUpdateActivityType: (String) -> Unit,
+    onUpdateActivityDuration: (Int?) -> Unit,
+    onUpdateActivityPerceivedExhaustion: (Int) -> Unit,
+    onUpdateActivityNote: (String) -> Unit,
+    onSubmitActivity: (LocalDate) -> Unit
+) {
+    var quickActionsForDate by remember { mutableStateOf<LocalDate?>(null) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(MaterialTheme.spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)
+    ) {
+        GreetingSection(today = state.today, onNavigateSettings = onNavigateSettings)
+        SparklineSection(state = state, onNavigateInsights = onNavigateInsights)
+        if (!state.isTodayLogged) {
+            CheckInPromptCard(onNavigateCheckIn = onNavigateCheckIn)
+        }
+        CalendarSection(
+            state = state,
+            onSelectDate = onSelectDate,
+            onResetToToday = onResetToToday,
+            onNavigateDetail = onNavigateDetail,
+            onNavigateCheckIn = onNavigateCheckIn,
+            onLongPressDate = { date -> quickActionsForDate = date }
+        )
+        QuickLogSection(
+            selectedDate = state.selectedDate,
+            state = quickLogState,
+            onUpdateSymptomName = onUpdateSymptomName,
+            onUpdateSymptomSeverity = onUpdateSymptomSeverity,
+            onUpdateSymptomNote = onUpdateSymptomNote,
+            onSubmitSymptom = onSubmitSymptom,
+            onUpdateActivityType = onUpdateActivityType,
+            onUpdateActivityDuration = onUpdateActivityDuration,
+            onUpdateActivityPerceivedExhaustion = onUpdateActivityPerceivedExhaustion,
+            onUpdateActivityNote = onUpdateActivityNote,
+            onSubmitActivity = onSubmitActivity
+        )
+        ChronoRexPrimaryButton(
+            text = if (state.isTodayLogged) "Edit today's check-in" else "Start today's check-in",
+            onClick = onNavigateCheckIn
+        )
+    }
+
+    quickActionsForDate?.let { date ->
+        QuickActionSheet(
+            date = date,
+            onDismiss = { quickActionsForDate = null },
+            onAction = { action ->
+                when (action) {
+                    QuickAction.LogSymptom -> onLogSymptomQuick(date)
+                    QuickAction.LogActivity -> onLogActivityQuick(date)
+                    QuickAction.EditCheckIn -> onNavigateCheckIn()
+                    QuickAction.MarkIllness -> onMarkIllness(date)
+                    QuickAction.MarkTravel -> onMarkTravel(date)
+                }
+                quickActionsForDate = null
+            }
+        )
+    }
+}
+
+
+}
+
+@Composable
+private fun GreetingSection(today: LocalDate, onNavigateSettings: () -> Unit) {
+    ChronoRexCard {
+        Text("Today is ${today}", style = MaterialTheme.typography.titleMedium)
+        ChronoRexPrimaryButton(
+            text = "Settings",
+            modifier = Modifier.padding(top = MaterialTheme.spacing.sm),
+            onClick = onNavigateSettings
+        )
+    }
+}
+
+
+@Composable
+private fun SparklineSection(
+    state: CalendarUiState,
+    onNavigateInsights: () -> Unit
+) {
+    val recentDays = remember(state.days, state.today) {
+        state.days
+            .filter { !it.date.isAfter(state.today) }
+            .sortedBy { it.date }
+            .takeLast(14)
+    }
+    val averageRestedness = remember(recentDays) {
+        if (recentDays.isEmpty()) 0.0 else recentDays.map { it.restedness0To100 }.average()
+    }
+    ChronoRexCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onNavigateInsights),
+        tonal = true
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
+            Text("Restedness trend", style = MaterialTheme.typography.titleMedium)
+            if (recentDays.size < 2) {
+                Text(
+                    text = "Log a few mornings to see your trend line.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            } else {
+                SparklineChart(values = recentDays.map { it.restedness0To100.toFloat() })
+                Text(
+                    text = "14-day avg ${averageRestedness.roundToInt()} | Today ${recentDays.last().restedness0To100}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Text(
+                text = "Tap to open insights",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+private fun SparklineChart(values: List<Float>) {
+    val density = LocalDensity.current
+    val strokeWidth = with(density) { 3.dp.toPx() }
+    val pointRadius = strokeWidth * 1.5f
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .padding(top = MaterialTheme.spacing.sm)
+    ) {
+        if (values.isEmpty()) return@Canvas
+        val count = values.size
+        val maxValue = values.maxOrNull() ?: 100f
+        val minValue = values.minOrNull() ?: 0f
+        val range = (maxValue - minValue).takeIf { it > 0f } ?: 1f
+        val path = Path()
+        values.forEachIndexed { index, value ->
+            val x = if (count == 1) size.width / 2f else size.width * index / (count - 1)
+            val normalized = (value - minValue) / range
+            val y = size.height - (normalized * size.height)
+            if (index == 0) {
+                path.moveTo(x, y)
+            } else {
+                path.lineTo(x, y)
+            }
+        }
+        drawPath(
+            path = path,
+            color = MaterialTheme.colorScheme.primary,
+            style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+        )
+        values.forEachIndexed { index, value ->
+            val x = if (count == 1) size.width / 2f else size.width * index / (count - 1)
+            val normalized = (value - minValue) / range
+            val y = size.height - (normalized * size.height)
+            drawCircle(
+                color = MaterialTheme.colorScheme.primary,
+                radius = pointRadius,
+                center = Offset(x, y)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CheckInPromptCard(onNavigateCheckIn: () -> Unit) {
+    ChronoRexCard {
+        Text("No AM check-in yet", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "Capture restedness and sleep to unlock trends.",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = MaterialTheme.spacing.sm)
+        )
+        ChronoRexPrimaryButton(
+            text = "Start check-in",
+            modifier = Modifier.padding(top = MaterialTheme.spacing.sm),
+            onClick = onNavigateCheckIn
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun CalendarSection(
+    state: CalendarUiState,
+    onSelectDate: (LocalDate) -> Unit,
+    onResetToToday: () -> Unit,
+    onNavigateDetail: (LocalDate) -> Unit,
+    onNavigateCheckIn: () -> Unit,
+    onLongPressDate: (LocalDate) -> Unit
+) {
+    val month = YearMonth.from(state.selectedDate)
+    val firstDay = month.atDay(1)
+    val daysInMonth = month.lengthOfMonth()
+    val offset = firstDay.dayOfWeek.value % 7
+    val today = state.today
+    val formatter = DateTimeFormatter.ofPattern("MMMM yyyy")
+
+    ChronoRexCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = formatter.format(month), style = MaterialTheme.typography.titleMedium)
+            ChronoRexAssistChip(text = "Today", onClick = onResetToToday)
+        }
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(7),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(240.dp)
+                .padding(top = MaterialTheme.spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
+        ) {
+            items(offset) { Spacer(modifier = Modifier.height(1.dp)) }
+            items(daysInMonth) { index ->
+                val date = firstDay.plusDays(index.toLong())
+                val dayEntry = state.days.firstOrNull { it.date == date }
+                val symptoms = state.symptomsByDate[date].orEmpty()
+                val activities = state.activitiesByDate[date].orEmpty()
+                val background = dayEntry?.restedness0To100?.let(::restednessColor) ?: MaterialTheme.colorScheme.surfaceVariant
+                val isSelected = date == state.selectedDate
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .background(background)
+                        .padding(6.dp)
+                        .pointerInput(date) {
+                            detectTapGestures(
+                                onTap = { onSelectDate(date) },
+                                onLongPress = { onLongPressDate(date) }
+                            )
+                        }
+                ) {
+                    Text(date.dayOfMonth.toString(), style = MaterialTheme.typography.labelLarge)
+                    val badgeText = when {
+                        symptoms.isNotEmpty() && activities.isNotEmpty() -> "SA"
+                        symptoms.isNotEmpty() -> "S"
+                        activities.isNotEmpty() -> "A"
+                        else -> ""
+                    }
+                    if (badgeText.isNotEmpty()) {
+                        Text(badgeText, style = MaterialTheme.typography.labelSmall)
+                    }
+                    if (date == today) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                    }
+                    if (isSelected) {
+                        ChronoRexAssistChip(
+                            text = "Detail",
+                            modifier = Modifier.padding(top = MaterialTheme.spacing.xs),
+                            onClick = { onNavigateDetail(date) }
+                        )
+                    }
+                    if (date == state.today) {
+                        ChronoRexAssistChip(
+                            text = if (state.isTodayLogged) "Edit" else "Check-in",
+                            modifier = Modifier.padding(top = MaterialTheme.spacing.xs),
+                            onClick = onNavigateCheckIn
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun restednessColor(value: Int): Color = when {
+    value < 25 -> Color(0xFFFFD8D8)
+    value < 50 -> Color(0xFFFFF0C2)
+    value < 75 -> Color(0xFFE4F6D4)
+    else -> Color(0xFFD5F1FF)
+}
+
+
+@Composable
+private fun PresetChipRow(
+    items: List<String>,
+    selectedValue: String,
+    onSelect: (String) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(top = MaterialTheme.spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
+    ) {
+        items.forEach { item ->
+            val isSelected = selectedValue.equals(item, ignoreCase = true)
+            ChronoRexAssistChip(
+                text = item,
+                onClick = { onSelect(item) },
+                colors = chipColors(isSelected)
+            )
+        }
+    }
+}
+
+@Composable
+private fun DurationPresetRow(
+    selectedDuration: Int?,
+    onSelect: (Int?) -> Unit
+) {
+    val presets = listOf(30, 60, 90)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(top = MaterialTheme.spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
+    ) {
+        presets.forEach { minutes ->
+            ChronoRexAssistChip(
+                text = "$minutes min",
+                onClick = { onSelect(minutes) },
+                colors = chipColors(selectedDuration == minutes)
+            )
+        }
+        ChronoRexAssistChip(
+            text = "Clear",
+            onClick = { onSelect(null) },
+            colors = chipColors(selectedDuration == null)
+        )
+    }
+}
+
+@Composable
+private fun chipColors(isSelected: Boolean): ChronoRexChipColors {
+    return if (isSelected) {
+        ChronoRexChipColors(
+            container = MaterialTheme.colorScheme.primary,
+            label = MaterialTheme.colorScheme.onPrimary
+        )
+    } else {
+        ChronoRexChipColors(
+            container = MaterialTheme.colorScheme.secondaryContainer,
+            label = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    }
+}
+
+@Composable
+private fun QuickLogSection(
+    selectedDate: LocalDate,
+    state: QuickLogState,
+    onUpdateSymptomName: (String) -> Unit,
+    onUpdateSymptomSeverity: (Int) -> Unit,
+    onUpdateSymptomNote: (String) -> Unit,
+    onSubmitSymptom: (LocalDate) -> Unit,
+    onUpdateActivityType: (String) -> Unit,
+    onUpdateActivityDuration: (Int?) -> Unit,
+    onUpdateActivityPerceivedExhaustion: (Int) -> Unit,
+    onUpdateActivityNote: (String) -> Unit,
+    onSubmitActivity: (LocalDate) -> Unit
+) {
+    val symptomPresets = listOf("Brain fog", "Pain", "Dizziness", "Headache", "Nausea")
+    val activityPresets = listOf("Physical", "Social", "Cognitive", "Work", "Outdoors", "Errands", "Custom")
+
+    ChronoRexCard {
+        Text("Quick symptom log", style = MaterialTheme.typography.titleMedium)
+        PresetChipRow(
+            items = symptomPresets,
+            selectedValue = state.symptomDraft.name,
+            onSelect = onUpdateSymptomName
+        )
+        OutlinedTextField(
+            value = state.symptomDraft.name,
+            onValueChange = onUpdateSymptomName,
+            label = { Text("Symptom") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = MaterialTheme.spacing.sm)
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = MaterialTheme.spacing.sm)
+        ) {
+            Text("Severity: ${state.symptomDraft.severity}")
+            ChronoRexAssistChip(text = "-", onClick = { onUpdateSymptomSeverity((state.symptomDraft.severity - 1).coerceAtLeast(1)) })
+            ChronoRexAssistChip(text = "+", onClick = { onUpdateSymptomSeverity((state.symptomDraft.severity + 1).coerceAtMost(10)) })
+        }
+        OutlinedTextField(
+            value = state.symptomDraft.note,
+            onValueChange = onUpdateSymptomNote,
+            label = { Text("Notes") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = MaterialTheme.spacing.sm)
+        )
+        ChronoRexPrimaryButton(
+            text = "Save symptom",
+            modifier = Modifier.padding(top = MaterialTheme.spacing.sm),
+            onClick = { onSubmitSymptom(selectedDate) },
+            enabled = state.symptomDraft.isValid && !state.isSavingSymptom
+        )
+        Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
+        Text("Quick activity log", style = MaterialTheme.typography.titleMedium)
+        PresetChipRow(
+            items = activityPresets,
+            selectedValue = state.activityDraft.type,
+            onSelect = { choice ->
+                if (choice == "Custom") onUpdateActivityType("") else onUpdateActivityType(choice)
+            }
+        )
+        OutlinedTextField(
+            value = state.activityDraft.type,
+            onValueChange = onUpdateActivityType,
+            label = { Text("Activity") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = MaterialTheme.spacing.sm)
+        )
+        DurationPresetRow(
+            selectedDuration = state.activityDraft.durationMinutes,
+            onSelect = onUpdateActivityDuration
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = MaterialTheme.spacing.sm)
+        ) {
+            val minutes = state.activityDraft.durationMinutes ?: 0
+            Text("Minutes: $minutes")
+            ChronoRexAssistChip(text = "-", onClick = { onUpdateActivityDuration((minutes - 5).coerceAtLeast(0)) })
+            ChronoRexAssistChip(text = "+", onClick = { onUpdateActivityDuration(minutes + 5) })
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = MaterialTheme.spacing.sm)
+        ) {
+            Text("Exhaustion: ${state.activityDraft.perceivedExhaustion}")
+            ChronoRexAssistChip(text = "-", onClick = { onUpdateActivityPerceivedExhaustion((state.activityDraft.perceivedExhaustion - 1).coerceAtLeast(1)) })
+            ChronoRexAssistChip(text = "+", onClick = { onUpdateActivityPerceivedExhaustion((state.activityDraft.perceivedExhaustion + 1).coerceAtMost(10)) })
+        }
+        OutlinedTextField(
+            value = state.activityDraft.note,
+            onValueChange = onUpdateActivityNote,
+            label = { Text("Notes") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = MaterialTheme.spacing.sm)
+        )
+        ChronoRexPrimaryButton(
+            text = "Save activity",
+            modifier = Modifier.padding(top = MaterialTheme.spacing.sm),
+            onClick = { onSubmitActivity(selectedDate) },
+            enabled = state.activityDraft.isValid && !state.isSavingActivity
+        )
+    }
+}
+
+
+}
+
+@Composable
+private fun QuickActionSheet(
+    date: LocalDate,
+    onDismiss: () -> Unit,
+    onAction: (QuickAction) -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaterialTheme.spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+        ) {
+            Text(text = "Actions for ${date}", style = MaterialTheme.typography.titleMedium)
+            ChronoRexPrimaryButton(text = "Log symptom", onClick = { onAction(QuickAction.LogSymptom) })
+            ChronoRexPrimaryButton(text = "Log activity", onClick = { onAction(QuickAction.LogActivity) })
+            ChronoRexPrimaryButton(text = "Edit AM check-in", onClick = { onAction(QuickAction.EditCheckIn) })
+            ChronoRexPrimaryButton(text = "Mark illness", onClick = { onAction(QuickAction.MarkIllness) })
+            ChronoRexPrimaryButton(text = "Mark travel", onClick = { onAction(QuickAction.MarkTravel) })
+        }
+    }
+}
+

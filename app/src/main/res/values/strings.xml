@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">ChronoRex</string>
+    <string name="reminder_notification_body">Time for your AM check-in.</string>
 </resources>
