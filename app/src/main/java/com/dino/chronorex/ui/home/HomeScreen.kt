@@ -17,11 +17,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.MaterialTheme
@@ -75,35 +77,39 @@ fun HomeScreenRoute(
     val calendarState by calendarViewModel.state.collectAsState()
     val quickLogState by quickLogViewModel.state.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.weight(1f)) {
-            HomeScreen(
-                state = calendarState,
-                quickLogState = quickLogState,
-                onSelectDate = calendarViewModel::selectDate,
-                onResetToToday = calendarViewModel::resetToToday,
-                onNavigateCheckIn = onNavigateCheckIn,
-                onNavigateDetail = onNavigateDetail,
-                onNavigateInsights = onNavigateInsights,
-                onNavigateSettings = onNavigateSettings,
-                onLogSymptomQuick = { date -> quickLogViewModel.submitSymptom(date) },
-                onLogActivityQuick = { date -> quickLogViewModel.submitActivity(date) },
-                onMarkIllness = calendarViewModel::markIllness,
-                onMarkTravel = calendarViewModel::markTravel,
-                onUpdateSymptomName = quickLogViewModel::updateSymptomName,
-                onUpdateSymptomSeverity = quickLogViewModel::updateSymptomSeverity,
-                onUpdateSymptomNote = quickLogViewModel::updateSymptomNote,
-                onSubmitSymptom = { date -> quickLogViewModel.submitSymptom(date) },
-                onUpdateActivityType = quickLogViewModel::updateActivityType,
-                onUpdateActivityDuration = quickLogViewModel::updateActivityDuration,
-                onUpdateActivityPerceivedExhaustion = quickLogViewModel::updateActivityPerceivedExhaustion,
-                onUpdateActivityNote = quickLogViewModel::updateActivityNote,
-                onSubmitActivity = { date -> quickLogViewModel.submitActivity(date) }
+    Scaffold(
+        bottomBar = {
+            BottomQuickActionsBar(
+                onLogSymptom = { quickLogViewModel.submitSymptom(calendarState.selectedDate) },
+                onLogActivity = { quickLogViewModel.submitActivity(calendarState.selectedDate) }
             )
         }
-        BottomQuickActionsBar(
-            onLogSymptom = { quickLogViewModel.submitSymptom(calendarState.selectedDate) },
-            onLogActivity = { quickLogViewModel.submitActivity(calendarState.selectedDate) }
+    ) { innerPadding ->
+        HomeScreen(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding),
+            state = calendarState,
+            quickLogState = quickLogState,
+            onSelectDate = calendarViewModel::selectDate,
+            onResetToToday = calendarViewModel::resetToToday,
+            onNavigateCheckIn = onNavigateCheckIn,
+            onNavigateDetail = onNavigateDetail,
+            onNavigateInsights = onNavigateInsights,
+            onNavigateSettings = onNavigateSettings,
+            onLogSymptomQuick = { date -> quickLogViewModel.submitSymptom(date) },
+            onLogActivityQuick = { date -> quickLogViewModel.submitActivity(date) },
+            onMarkIllness = calendarViewModel::markIllness,
+            onMarkTravel = calendarViewModel::markTravel,
+            onUpdateSymptomName = quickLogViewModel::updateSymptomName,
+            onUpdateSymptomSeverity = quickLogViewModel::updateSymptomSeverity,
+            onUpdateSymptomNote = quickLogViewModel::updateSymptomNote,
+            onSubmitSymptom = { date -> quickLogViewModel.submitSymptom(date) },
+            onUpdateActivityType = quickLogViewModel::updateActivityType,
+            onUpdateActivityDuration = quickLogViewModel::updateActivityDuration,
+            onUpdateActivityPerceivedExhaustion = quickLogViewModel::updateActivityPerceivedExhaustion,
+            onUpdateActivityNote = quickLogViewModel::updateActivityNote,
+            onSubmitActivity = { date -> quickLogViewModel.submitActivity(date) }
         )
     }
 }
@@ -113,6 +119,7 @@ enum class QuickAction { LogSymptom, LogActivity, EditCheckIn, MarkIllness, Mark
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    modifier: Modifier = Modifier,
     state: CalendarUiState,
     quickLogState: QuickLogState,
     onSelectDate: (LocalDate) -> Unit,
@@ -138,8 +145,7 @@ fun HomeScreen(
     var quickActionsForDate by remember { mutableStateOf<LocalDate?>(null) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = modifier
             .padding(MaterialTheme.spacing.lg),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)
     ) {
@@ -156,9 +162,25 @@ fun HomeScreen(
             onNavigateCheckIn = onNavigateCheckIn,
             onLongPressDate = { date -> quickActionsForDate = date }
         )
+        val symptomSuggestions = topUsedLabels(
+            state.symptomsByDate.values.flatten().map { it.name },
+            limit = 6
+        )
+        val activitySuggestions = topUsedLabels(
+            state.activitiesByDate.values.flatten().map { it.type },
+            limit = 8
+        )
+        val durationSuggestions = topDurationPresets(
+            state.activitiesByDate.values.flatten().mapNotNull { it.durationMinutes },
+            limit = 5
+        )
+
         QuickLogSection(
             selectedDate = state.selectedDate,
             state = quickLogState,
+            symptomSuggestions = symptomSuggestions,
+            activitySuggestions = activitySuggestions,
+            durationSuggestions = durationSuggestions,
             onUpdateSymptomName = onUpdateSymptomName,
             onUpdateSymptomSeverity = onUpdateSymptomSeverity,
             onUpdateSymptomNote = onUpdateSymptomNote,
@@ -194,7 +216,6 @@ fun HomeScreen(
 }
 
 
-}
 
 @Composable
 private fun GreetingSection(today: LocalDate, onNavigateSettings: () -> Unit) {
@@ -257,6 +278,7 @@ private fun SparklineChart(values: List<Float>) {
     val density = LocalDensity.current
     val strokeWidth = with(density) { 3.dp.toPx() }
     val pointRadius = strokeWidth * 1.5f
+    val trendColor = MaterialTheme.colorScheme.primary
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
@@ -281,7 +303,7 @@ private fun SparklineChart(values: List<Float>) {
         }
         drawPath(
             path = path,
-            color = MaterialTheme.colorScheme.primary,
+            color = trendColor,
             style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
         )
         values.forEachIndexed { index, value ->
@@ -289,7 +311,7 @@ private fun SparklineChart(values: List<Float>) {
             val normalized = (value - minValue) / range
             val y = size.height - (normalized * size.height)
             drawCircle(
-                color = MaterialTheme.colorScheme.primary,
+                color = trendColor,
                 radius = pointRadius,
                 center = Offset(x, y)
             )
@@ -417,6 +439,53 @@ private fun restednessColor(value: Int): Color = when {
 }
 
 
+private fun topUsedLabels(values: List<String>, limit: Int): List<String> {
+    if (values.isEmpty()) return emptyList()
+    val counts = mutableMapOf<String, Int>()
+    val displayNames = mutableMapOf<String, String>()
+    values.forEach { raw ->
+        val trimmed = raw.trim()
+        if (trimmed.isEmpty()) return@forEach
+        val key = trimmed.lowercase()
+        displayNames.putIfAbsent(key, trimmed)
+        counts[key] = counts.getOrDefault(key, 0) + 1
+    }
+    if (counts.isEmpty()) return emptyList()
+    return counts.entries
+        .sortedWith { a, b ->
+            val countCompare = b.value.compareTo(a.value)
+            if (countCompare != 0) {
+                countCompare
+            } else {
+                displayNames[a.key].orEmpty().compareTo(displayNames[b.key].orEmpty())
+            }
+        }
+        .mapNotNull { displayNames[it.key] }
+        .take(limit)
+}
+
+private fun topDurationPresets(values: List<Int>, limit: Int): List<Int> {
+    if (values.isEmpty()) return emptyList()
+    val counts = mutableMapOf<Int, Int>()
+    values.forEach { minutes ->
+        if (minutes <= 0) return@forEach
+        val rounded = ((minutes + 4) / 5) * 5
+        counts[rounded] = counts.getOrDefault(rounded, 0) + 1
+    }
+    if (counts.isEmpty()) return emptyList()
+    return counts.entries
+        .sortedWith { a, b ->
+            val countCompare = b.value.compareTo(a.value)
+            if (countCompare != 0) {
+                countCompare
+            } else {
+                a.key.compareTo(b.key)
+            }
+        }
+        .map { it.key }
+        .take(limit)
+}
+
 @Composable
 private fun PresetChipRow(
     items: List<String>,
@@ -443,10 +512,10 @@ private fun PresetChipRow(
 
 @Composable
 private fun DurationPresetRow(
+    presets: List<Int>,
     selectedDuration: Int?,
     onSelect: (Int?) -> Unit
 ) {
-    val presets = listOf(30, 60, 90)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -488,6 +557,9 @@ private fun chipColors(isSelected: Boolean): ChronoRexChipColors {
 private fun QuickLogSection(
     selectedDate: LocalDate,
     state: QuickLogState,
+    symptomSuggestions: List<String>,
+    activitySuggestions: List<String>,
+    durationSuggestions: List<Int>,
     onUpdateSymptomName: (String) -> Unit,
     onUpdateSymptomSeverity: (Int) -> Unit,
     onUpdateSymptomNote: (String) -> Unit,
@@ -498,16 +570,15 @@ private fun QuickLogSection(
     onUpdateActivityNote: (String) -> Unit,
     onSubmitActivity: (LocalDate) -> Unit
 ) {
-    val symptomPresets = listOf("Brain fog", "Pain", "Dizziness", "Headache", "Nausea")
-    val activityPresets = listOf("Physical", "Social", "Cognitive", "Work", "Outdoors", "Errands", "Custom")
-
     ChronoRexCard {
         Text("Quick symptom log", style = MaterialTheme.typography.titleMedium)
-        PresetChipRow(
-            items = symptomPresets,
-            selectedValue = state.symptomDraft.name,
-            onSelect = onUpdateSymptomName
-        )
+        if (symptomSuggestions.isNotEmpty()) {
+            PresetChipRow(
+                items = symptomSuggestions,
+                selectedValue = state.symptomDraft.name,
+                onSelect = onUpdateSymptomName
+            )
+        }
         OutlinedTextField(
             value = state.symptomDraft.name,
             onValueChange = onUpdateSymptomName,
@@ -541,13 +612,13 @@ private fun QuickLogSection(
         )
         Spacer(modifier = Modifier.height(MaterialTheme.spacing.lg))
         Text("Quick activity log", style = MaterialTheme.typography.titleMedium)
-        PresetChipRow(
-            items = activityPresets,
-            selectedValue = state.activityDraft.type,
-            onSelect = { choice ->
-                if (choice == "Custom") onUpdateActivityType("") else onUpdateActivityType(choice)
-            }
-        )
+        if (activitySuggestions.isNotEmpty()) {
+            PresetChipRow(
+                items = activitySuggestions,
+                selectedValue = state.activityDraft.type,
+                onSelect = onUpdateActivityType
+            )
+        }
         OutlinedTextField(
             value = state.activityDraft.type,
             onValueChange = onUpdateActivityType,
@@ -557,6 +628,7 @@ private fun QuickLogSection(
                 .padding(top = MaterialTheme.spacing.sm)
         )
         DurationPresetRow(
+            presets = durationSuggestions,
             selectedDuration = state.activityDraft.durationMinutes,
             onSelect = onUpdateActivityDuration
         )
@@ -597,8 +669,8 @@ private fun QuickLogSection(
 }
 
 
-}
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun QuickActionSheet(
     date: LocalDate,
@@ -625,4 +697,3 @@ private fun QuickActionSheet(
         }
     }
 }
-

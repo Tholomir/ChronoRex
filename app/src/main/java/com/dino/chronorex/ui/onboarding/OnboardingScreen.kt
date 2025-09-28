@@ -78,7 +78,7 @@ fun OnboardingScreen(
         ) {
             ChronoRexPrimaryButton(
                 text = "Back",
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(0.45f),
                 onClick = onBack,
                 enabled = state.step != OnboardingStep.Privacy
             )
@@ -86,7 +86,7 @@ fun OnboardingScreen(
             val action = if (state.step == OnboardingStep.Ready) onComplete else onNext
             ChronoRexPrimaryButton(
                 text = primaryLabel,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(0.45f),
                 onClick = action,
                 enabled = !state.isSaving
             )
@@ -154,7 +154,7 @@ private fun ReminderStepContent(
         ) {
             ChronoRexPrimaryButton(
                 text = "Choose time",
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(0.45f),
                 onClick = {
                     val base = state.reminderTime
                     TimePickerDialog(
@@ -168,7 +168,7 @@ private fun ReminderStepContent(
             )
             ChronoRexPrimaryButton(
                 text = "Use now",
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(0.45f),
                 onClick = onSetReminderToNow
             )
         }

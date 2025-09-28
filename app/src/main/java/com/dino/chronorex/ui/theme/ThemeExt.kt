@@ -1,6 +1,7 @@
 package com.dino.chronorex.ui.theme
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
 
 val MaterialTheme.spacing: ChronoRexSpacing
-    get() = LocalSpacing.current
+    @Composable get() = LocalSpacing.current

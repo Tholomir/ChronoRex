@@ -2,7 +2,7 @@ package com.dino.chronorex.ui.daydetail
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row\nimport androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +12,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import com.dino.chronorex.ui.components.ChronoRexAssistChip
@@ -97,7 +98,7 @@ fun DayDetailScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                            Column(modifier = Modifier.padding(end = MaterialTheme.spacing.sm)) {
                                 Text(symptom.name, fontWeight = FontWeight.SemiBold)
                                 Text("Severity ${symptom.severity1To10}", style = MaterialTheme.typography.bodySmall)
                                 symptom.note?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
@@ -126,7 +127,7 @@ fun DayDetailScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                            Column(modifier = Modifier.padding(end = MaterialTheme.spacing.sm)) {
                                 Text(activity.type, fontWeight = FontWeight.SemiBold)
                                 Text(
                                     text = "Exhaustion ${activity.perceivedExhaustion1To10}",

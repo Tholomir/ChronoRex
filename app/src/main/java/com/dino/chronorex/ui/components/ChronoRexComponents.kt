@@ -1,6 +1,8 @@
 package com.dino.chronorex.ui.components
 
-import androidx.compose.foundation.layout.Arrangement\nimport androidx.compose.foundation.layout.Row\nimport androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,6 +16,7 @@ import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -107,11 +110,13 @@ fun ChronoRexAssistChip(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChronoRexTopBar(currentRoute: String?) {
     val title = when (currentRoute) {
         ChronoRexRoute.CheckIn.route -> "Daily Check-In"
-        ChronoRexRoute.Settings.route -> "Settings"\n        ChronoRexRoute.Insights.route -> "Insights"
+        ChronoRexRoute.Settings.route -> "Settings"
+        ChronoRexRoute.Insights.route -> "Insights"
         ChronoRexRoute.DayDetail.route -> "Day Detail"
         ChronoRexRoute.Onboarding.route -> "Onboarding"
         else -> "ChronoRex"
@@ -132,19 +137,19 @@ fun ToggleRow(
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
-        modifier = Modifier.fillMaxWidth()
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f)
+            style = MaterialTheme.typography.bodyLarge
         )
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BottomQuickActionsBar(
     onLogSymptom: () -> Unit,
@@ -158,13 +163,13 @@ fun BottomQuickActionsBar(
     ) {
         ChronoRexPrimaryButton(
             text = "Symptoms",
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(0.45f),
             onClick = onLogSymptom
         )
         Spacer(modifier = Modifier.width(MaterialTheme.spacing.sm))
         ChronoRexPrimaryButton(
             text = "Activities",
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(0.45f),
             onClick = onLogActivity
         )
     }

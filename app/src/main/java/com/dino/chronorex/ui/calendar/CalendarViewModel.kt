@@ -88,7 +88,8 @@ class CalendarViewModel(
     private fun markFlag(date: LocalDate, illness: Boolean = false, travel: Boolean = false) {
         viewModelScope.launch {
             val existing = dayRepository.getDay(date)
-            val offsetMinutes = clock.zone.rules.getOffset(date.atStartOfDay(clock.zone)).totalSeconds / 60
+            val zone = clock.zone
+            val offsetMinutes = date.atStartOfDay(zone).offset.totalSeconds / 60
             val base = existing ?: Day(
                 date = date,
                 timezoneOffsetMinutes = offsetMinutes,

@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 class ChronoRexAppState(
     val navController: NavHostController,
     val container: ChronoRexAppContainer,
-    coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope
 ) {
     private val settingsRepository: SettingsRepository = container.settingsRepository
 

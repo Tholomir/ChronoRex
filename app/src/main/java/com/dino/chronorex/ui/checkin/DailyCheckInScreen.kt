@@ -3,6 +3,8 @@ package com.dino.chronorex.ui.checkin
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +25,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -196,24 +200,59 @@ private fun FlagRow(label: String, checked: Boolean, onCheckedChange: (Boolean) 
 
 @Composable
 private fun EmojiSection(tags: List<String>, onUpdate: (List<String>) -> Unit) {
-    val suggestions = listOf("calm", "flare", "rest", "focus", "joy", "ache")
-    Row(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)) {
-        suggestions.forEach { suggestion ->
-            ChronoRexAssistChip(
-                text = suggestion,
-                onClick = {
-                    val updated = if (tags.contains(suggestion)) tags else tags + suggestion
-                    onUpdate(updated.takeLast(6))
-                }
-            )
-        }
-        ChronoRexAssistChip(text = "Clear", onClick = { onUpdate(emptyList()) })
-    }
+    var pendingTag by remember { mutableStateOf("") }
+
     if (tags.isNotEmpty()) {
         Text(
-            text = "Tags: ${tags.joinToString(", ")}",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = MaterialTheme.spacing.xs)
+            text = "Tags",
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(bottom = MaterialTheme.spacing.xs)
+        )
+        Row(
+            modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+                .padding(bottom = MaterialTheme.spacing.xs),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            tags.forEach { tag ->
+                ChronoRexAssistChip(
+                    text = tag,
+                    onClick = {
+                        onUpdate(tags.filterNot { existing -> existing.equals(tag, ignoreCase = true) })
+                    }
+                )
+            }
+            ChronoRexAssistChip(text = "Clear", onClick = { onUpdate(emptyList()) })
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = MaterialTheme.spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
+    ) {
+        OutlinedTextField(
+            value = pendingTag,
+            onValueChange = { pendingTag = it },
+            label = { Text("Add tag") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        ChronoRexAssistChip(
+            text = "Add",
+            enabled = pendingTag.isNotBlank(),
+            onClick = {
+                val sanitized = pendingTag.trim()
+                if (sanitized.isNotEmpty()) {
+                    val filtered = tags.filterNot { it.equals(sanitized, ignoreCase = true) }
+                    val updated = (filtered + sanitized).takeLast(6)
+                    onUpdate(updated)
+                    pendingTag = ""
+                }
+            }
         )
     }
 }
+
