@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dino.chronorex.data.repository.ActivityRepository
 import com.dino.chronorex.data.repository.DayRepository
-import com.dino.chronorex.data.repository.SymptomRepository\r\nimport com.dino.chronorex.model.ActivityEntry\r\nimport com.dino.chronorex.notification.ReminderManager\r\nimport com.dino.chronorex.model.Day
+import com.dino.chronorex.data.repository.SymptomRepository
+import com.dino.chronorex.model.ActivityEntry
+import com.dino.chronorex.notification.ReminderManager
+import com.dino.chronorex.model.Day
 import com.dino.chronorex.model.SymptomEntry
 import java.time.Clock
 import java.time.LocalDate
