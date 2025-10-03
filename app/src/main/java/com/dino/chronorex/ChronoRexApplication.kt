@@ -1,4 +1,4 @@
-package com.dino.chronorex
+﻿package com.dino.chronorex
 
 import android.app.Application
 import com.dino.chronorex.data.local.ChronoRexDatabase
@@ -6,6 +6,8 @@ import com.dino.chronorex.data.repository.ActivityRepository
 import com.dino.chronorex.data.repository.DayRepository
 import com.dino.chronorex.data.repository.SettingsRepository
 import com.dino.chronorex.data.repository.SymptomRepository
+import com.dino.chronorex.data.repository.WeeklyReviewRepository
+import com.dino.chronorex.export.ExportManager
 import com.dino.chronorex.notification.ReminderManager
 import com.dino.chronorex.notification.ReminderNotificationChannel
 import com.dino.chronorex.notification.ReminderScheduler
@@ -31,6 +33,8 @@ interface ChronoRexAppContainer {
     val activityRepository: ActivityRepository
     val settingsRepository: SettingsRepository
     val reminderManager: ReminderManager
+    val weeklyReviewRepository: WeeklyReviewRepository
+    val exportManager: ExportManager
 }
 
 private class DefaultChronoRexAppContainer(app: Application) : ChronoRexAppContainer {
@@ -40,7 +44,17 @@ private class DefaultChronoRexAppContainer(app: Application) : ChronoRexAppConta
     override val symptomRepository: SymptomRepository by lazy { SymptomRepository(database.symptomEntryDao()) }
     override val activityRepository: ActivityRepository by lazy { ActivityRepository(database.activityEntryDao()) }
     override val settingsRepository: SettingsRepository by lazy { SettingsRepository(database.settingsDao()) }
+    override val weeklyReviewRepository: WeeklyReviewRepository by lazy { WeeklyReviewRepository(database.weeklyReviewDao()) }
+    override val exportManager: ExportManager by lazy {
+        ExportManager(
+            app,
+            dayRepository,
+            symptomRepository,
+            activityRepository,
+            settingsRepository,
+            weeklyReviewRepository
+        )
+    }
     private val reminderScheduler: ReminderScheduler by lazy { ReminderScheduler(app) }
     override val reminderManager: ReminderManager by lazy { ReminderManager(settingsRepository, reminderScheduler) }
 }
-

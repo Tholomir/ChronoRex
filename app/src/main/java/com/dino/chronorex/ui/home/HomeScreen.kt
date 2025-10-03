@@ -1,4 +1,4 @@
-package com.dino.chronorex.ui.home
+﻿package com.dino.chronorex.ui.home
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -59,6 +59,8 @@ import com.dino.chronorex.ui.components.ChronoRexChipColors
 import com.dino.chronorex.ui.components.ChronoRexPrimaryButton
 import com.dino.chronorex.ui.quicklog.QuickLogState
 import com.dino.chronorex.ui.quicklog.QuickLogViewModel
+import com.dino.chronorex.ui.weeklyreview.WeeklyReviewUiState
+import com.dino.chronorex.ui.weeklyreview.WeeklyReviewViewModel
 import com.dino.chronorex.ui.theme.spacing
 import java.time.LocalDate
 import java.time.YearMonth
@@ -70,12 +72,16 @@ fun HomeScreenRoute(
     onNavigateCheckIn: () -> Unit,
     onNavigateDetail: (LocalDate) -> Unit,
     onNavigateInsights: () -> Unit,
-    onNavigateSettings: () -> Unit
+    onNavigateSettings: () -> Unit,
+    onNavigateWeeklyReview: () -> Unit,
+    onNavigateExport: () -> Unit
 ) {
     val calendarViewModel: CalendarViewModel = viewModel(factory = factory)
     val quickLogViewModel: QuickLogViewModel = viewModel(factory = factory)
+    val weeklyReviewViewModel: WeeklyReviewViewModel = viewModel(factory = factory)
     val calendarState by calendarViewModel.state.collectAsState()
     val quickLogState by quickLogViewModel.state.collectAsState()
+    val weeklyReviewState by weeklyReviewViewModel.state.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -91,6 +97,7 @@ fun HomeScreenRoute(
                 .padding(innerPadding),
             state = calendarState,
             quickLogState = quickLogState,
+            weeklyReviewState = weeklyReviewState,
             onSelectDate = calendarViewModel::selectDate,
             onResetToToday = calendarViewModel::resetToToday,
             onNavigateCheckIn = onNavigateCheckIn,
@@ -109,7 +116,15 @@ fun HomeScreenRoute(
             onUpdateActivityDuration = quickLogViewModel::updateActivityDuration,
             onUpdateActivityPerceivedExhaustion = quickLogViewModel::updateActivityPerceivedExhaustion,
             onUpdateActivityNote = quickLogViewModel::updateActivityNote,
-            onSubmitActivity = { date -> quickLogViewModel.submitActivity(date) }
+            onSubmitActivity = { date -> quickLogViewModel.submitActivity(date) },
+            onNavigateWeeklyReview = {
+                weeklyReviewState.latestReview?.let { weeklyReviewViewModel.markReviewOpened(it.id) }
+                onNavigateWeeklyReview()
+            },
+            onDismissWeeklyReviewBanner = {
+                weeklyReviewState.latestReview?.id?.let(weeklyReviewViewModel::markReviewOpened)
+            },
+            onNavigateExport = onNavigateExport
         )
     }
 }
@@ -122,6 +137,7 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     state: CalendarUiState,
     quickLogState: QuickLogState,
+    weeklyReviewState: WeeklyReviewUiState,
     onSelectDate: (LocalDate) -> Unit,
     onResetToToday: () -> Unit,
     onNavigateCheckIn: () -> Unit,
@@ -151,6 +167,11 @@ fun HomeScreen(
     ) {
         GreetingSection(today = state.today, onNavigateSettings = onNavigateSettings)
         SparklineSection(state = state, onNavigateInsights = onNavigateInsights)
+        if (weeklyReviewState.showBanner) {
+            WeeklyReviewBanner(onView = onNavigateWeeklyReview, onDismiss = onDismissWeeklyReviewBanner)
+        } else if (weeklyReviewState.hasEnoughData) {
+            WeeklyReviewTeaser(onNavigateWeeklyReview = onNavigateWeeklyReview)
+        }
         if (!state.isTodayLogged) {
             CheckInPromptCard(onNavigateCheckIn = onNavigateCheckIn)
         }
@@ -190,6 +211,11 @@ fun HomeScreen(
             onUpdateActivityPerceivedExhaustion = onUpdateActivityPerceivedExhaustion,
             onUpdateActivityNote = onUpdateActivityNote,
             onSubmitActivity = onSubmitActivity
+        )
+        ChronoRexPrimaryButton(
+            text = "Export data",
+            modifier = Modifier.fillMaxWidth(),
+            onClick = onNavigateExport
         )
         ChronoRexPrimaryButton(
             text = if (state.isTodayLogged) "Edit today's check-in" else "Start today's check-in",
@@ -278,7 +304,7 @@ private fun SparklineChart(values: List<Float>) {
     val density = LocalDensity.current
     val strokeWidth = with(density) { 3.dp.toPx() }
     val pointRadius = strokeWidth * 1.5f
-    val trendColor = MaterialTheme.colorScheme.primary
+    val trendColor = MaterialTheme.colorScheme.tertiary
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
@@ -336,6 +362,61 @@ private fun CheckInPromptCard(onNavigateCheckIn: () -> Unit) {
     }
 }
 
+@Composable
+private fun WeeklyReviewBanner(onView: () -> Unit, onDismiss: () -> Unit) {
+    ChronoRexCard {
+        Text(
+            text = "Your weekly review is ready",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = "See seven-day highlights and trends without leaving the device.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = MaterialTheme.spacing.xs)
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = MaterialTheme.spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+        ) {
+            ChronoRexPrimaryButton(
+                text = "View now",
+                modifier = Modifier.fillMaxWidth(0.55f),
+                onClick = onView
+            )
+            ChronoRexAssistChip(
+                text = "Later",
+                onClick = onDismiss,
+                colors = ChronoRexChipColors(
+                    container = MaterialTheme.colorScheme.secondaryContainer,
+                    label = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            )
+        }
+    }
+}
+
+@Composable
+private fun WeeklyReviewTeaser(onNavigateWeeklyReview: () -> Unit) {
+    ChronoRexCard(tonal = true) {
+        Text(
+            text = "Weekly summary",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = "Open a one-page recap of fatigue, symptoms, and activities.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = MaterialTheme.spacing.xs)
+        )
+        ChronoRexPrimaryButton(
+            text = "Open weekly review",
+            modifier = Modifier.padding(top = MaterialTheme.spacing.sm),
+            onClick = onNavigateWeeklyReview
+        )
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun CalendarSection(
@@ -377,7 +458,7 @@ private fun CalendarSection(
                 val dayEntry = state.days.firstOrNull { it.date == date }
                 val symptoms = state.symptomsByDate[date].orEmpty()
                 val activities = state.activitiesByDate[date].orEmpty()
-                val background = dayEntry?.restedness0To100?.let(::restednessColor) ?: MaterialTheme.colorScheme.surfaceVariant
+                val background = dayEntry?.restedness0To100?.let { restednessColor(it) } ?: MaterialTheme.colorScheme.surfaceVariant
                 val isSelected = date == state.selectedDate
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -431,11 +512,15 @@ private fun CalendarSection(
     }
 }
 
-private fun restednessColor(value: Int): Color = when {
-    value < 25 -> Color(0xFFFFD8D8)
-    value < 50 -> Color(0xFFFFF0C2)
-    value < 75 -> Color(0xFFE4F6D4)
-    else -> Color(0xFFD5F1FF)
+@Composable
+private fun restednessColor(value: Int): Color {
+    val scheme = MaterialTheme.colorScheme
+    return when {
+        value < 25 -> scheme.error.copy(alpha = 0.24f)
+        value < 50 -> scheme.tertiary.copy(alpha = 0.20f)
+        value < 75 -> scheme.primary.copy(alpha = 0.18f)
+        else -> scheme.secondary.copy(alpha = 0.18f)
+    }
 }
 
 
@@ -697,3 +782,4 @@ private fun QuickActionSheet(
         }
     }
 }
+

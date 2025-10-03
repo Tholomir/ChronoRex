@@ -1,14 +1,17 @@
+
 package com.dino.chronorex.data.mapper
 
 import com.dino.chronorex.data.local.entity.ActivityEntryEntity
 import com.dino.chronorex.data.local.entity.DayEntity
 import com.dino.chronorex.data.local.entity.SettingsEntity
 import com.dino.chronorex.data.local.entity.SymptomEntryEntity
+import com.dino.chronorex.data.local.entity.WeeklyReviewEntity
 import com.dino.chronorex.model.ActivityEntry
 import com.dino.chronorex.model.AppTheme
 import com.dino.chronorex.model.Day
 import com.dino.chronorex.model.Settings
 import com.dino.chronorex.model.SymptomEntry
+import com.dino.chronorex.model.WeeklyReview
 import java.util.UUID
 
 fun DayEntity.toModel(): Day = Day(
@@ -95,4 +98,30 @@ fun Settings.toEntity(): SettingsEntity = SettingsEntity(
     notificationsDenied = notificationsDenied,
     onboardingCompleted = onboardingCompleted,
     snoozedUntil = snoozedUntil
+)
+
+fun WeeklyReviewEntity.toModel(): WeeklyReview = WeeklyReview(
+    id = UUID.fromString(id),
+    startDate = startDate,
+    endDate = endDate,
+    generatedAt = generatedAt,
+    trendHighlights = trendHighlights,
+    correlationHighlights = correlationHighlights,
+    bestDay = bestDay,
+    toughestDay = toughestDay,
+    adherenceSummary = adherenceSummary,
+    needsInAppNudge = needsInAppNudge
+)
+
+fun WeeklyReview.toEntity(): WeeklyReviewEntity = WeeklyReviewEntity(
+    id = id.toString(),
+    startDate = startDate,
+    endDate = endDate,
+    generatedAt = generatedAt,
+    trendHighlights = trendHighlights,
+    correlationHighlights = correlationHighlights,
+    bestDay = bestDay,
+    toughestDay = toughestDay,
+    adherenceSummary = adherenceSummary,
+    needsInAppNudge = needsInAppNudge
 )

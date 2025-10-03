@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,17 +40,23 @@ fun ChronoRexPrimaryButton(
     enabled: Boolean = true,
     onClick: () -> Unit
 ) {
+    val colors = ButtonDefaults.buttonColors(
+        containerColor = MaterialTheme.colorScheme.tertiary,
+        contentColor = MaterialTheme.colorScheme.onTertiary,
+        disabledContainerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f),
+        disabledContentColor = MaterialTheme.colorScheme.onTertiary.copy(alpha = 0.7f)
+    )
     Button(
         modifier = modifier,
         onClick = onClick,
         enabled = enabled,
         shape = MaterialTheme.shapes.medium,
+        colors = colors,
         contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.lg, vertical = 14.dp)
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onPrimary
+            style = MaterialTheme.typography.labelLarge
         )
     }
 }
@@ -60,15 +68,29 @@ fun ChronoRexCard(
     contentPadding: PaddingValues = PaddingValues(MaterialTheme.spacing.lg),
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val colors = CardDefaults.cardColors(
-        containerColor = if (tonal) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
-        contentColor = MaterialTheme.colorScheme.onSurface
+    val containerColor = if (tonal) {
+        MaterialTheme.colorScheme.secondaryContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+    val contentColor = if (tonal) {
+        MaterialTheme.colorScheme.onSecondaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+    val border = if (tonal) null else BorderStroke(
+        width = 1.dp,
+        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
     )
     Card(
         modifier = modifier,
         shape = MaterialTheme.shapes.medium,
-        colors = colors,
-        elevation = CardDefaults.cardElevation(defaultElevation = if (tonal) 0.dp else 2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor,
+            contentColor = contentColor
+        ),
+        border = border,
+        elevation = CardDefaults.cardElevation(defaultElevation = if (tonal) 0.dp else 4.dp)
     ) {
         Column(modifier = Modifier.padding(contentPadding), content = content)
     }
@@ -124,8 +146,8 @@ fun ChronoRexTopBar(currentRoute: String?) {
     CenterAlignedTopAppBar(
         title = { Text(title, style = MaterialTheme.typography.titleLarge) },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background,
-            titleContentColor = MaterialTheme.colorScheme.onBackground
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface
         )
     )
 }
@@ -157,7 +179,7 @@ fun BottomQuickActionsBar(
 ) {
     BottomAppBar(
         modifier = Modifier.navigationBarsPadding(),
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
         tonalElevation = 3.dp,
         contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.lg, vertical = MaterialTheme.spacing.sm)
     ) {
