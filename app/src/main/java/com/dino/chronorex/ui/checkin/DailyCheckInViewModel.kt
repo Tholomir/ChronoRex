@@ -33,6 +33,8 @@ data class DailyCheckInUiState(
 
     val emojiTags: List<String>,
 
+    val recentEmojiSuggestions: List<String> = emptyList(),
+
     val illness: Boolean,
 
     val travel: Boolean,
@@ -124,6 +126,27 @@ class DailyCheckInViewModel(
             }
         }
     }
+
+
+        viewModelScope.launch {
+            dayRepository.observeAll().collectLatest { days ->
+                val suggestions = mutableListOf<String>()
+                val seen = mutableSetOf<String>()
+                outer@ for (day in days.sortedByDescending { it.date }) {
+                    for (tag in day.emojiTags.asReversed()) {
+                        val trimmed = tag.trim()
+                        if (trimmed.isEmpty()) continue
+                        if (seen.add(trimmed)) {
+                            suggestions.add(trimmed)
+                            if (suggestions.size == 6) {
+                                break@outer
+                            }
+                        }
+                    }
+                }
+                _state.update { current -> current.copy(recentEmojiSuggestions = suggestions) }
+            }
+        }
 
     private fun observeCurrentDay() {
         observeJob?.cancel()

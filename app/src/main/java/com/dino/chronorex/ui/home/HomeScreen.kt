@@ -1,4 +1,4 @@
-﻿package com.dino.chronorex.ui.home
+package com.dino.chronorex.ui.home
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -9,9 +9,12 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -160,9 +163,12 @@ fun HomeScreen(
 ) {
     var quickActionsForDate by remember { mutableStateOf<LocalDate?>(null) }
 
+    val scrollState = rememberScrollState()
     Column(
         modifier = modifier
-            .padding(MaterialTheme.spacing.lg),
+            .padding(MaterialTheme.spacing.lg)
+            .imePadding()
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)
     ) {
         GreetingSection(today = state.today, onNavigateSettings = onNavigateSettings)
@@ -382,7 +388,7 @@ private fun WeeklyReviewBanner(onView: () -> Unit, onDismiss: () -> Unit) {
         ) {
             ChronoRexPrimaryButton(
                 text = "View now",
-                modifier = Modifier.fillMaxWidth(0.55f),
+                modifier = Modifier.weight(1f),
                 onClick = onView
             )
             ChronoRexAssistChip(
@@ -433,6 +439,11 @@ private fun CalendarSection(
     val offset = firstDay.dayOfWeek.value % 7
     val today = state.today
     val formatter = DateTimeFormatter.ofPattern("MMMM yyyy")
+    val totalCells = offset + daysInMonth
+    val rows = ((totalCells + 6) / 7).coerceAtLeast(1)
+    val dayCellHeight = 56.dp
+    val cellSpacing = MaterialTheme.spacing.xs
+    val gridHeight = dayCellHeight * rows + cellSpacing * (rows - 1)
 
     ChronoRexCard {
         Row(
@@ -447,12 +458,12 @@ private fun CalendarSection(
             columns = GridCells.Fixed(7),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(240.dp)
+                .heightIn(min = gridHeight)
                 .padding(top = MaterialTheme.spacing.sm),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs)
+            horizontalArrangement = Arrangement.spacedBy(cellSpacing),
+            verticalArrangement = Arrangement.spacedBy(cellSpacing)
         ) {
-            items(offset) { Spacer(modifier = Modifier.height(1.dp)) }
+            items(offset) { Spacer(modifier = Modifier.height(dayCellHeight)) }
             items(daysInMonth) { index ->
                 val date = firstDay.plusDays(index.toLong())
                 val dayEntry = state.days.firstOrNull { it.date == date }
@@ -460,12 +471,15 @@ private fun CalendarSection(
                 val activities = state.activitiesByDate[date].orEmpty()
                 val background = dayEntry?.restedness0To100?.let { restednessColor(it) } ?: MaterialTheme.colorScheme.surfaceVariant
                 val isSelected = date == state.selectedDate
+                val hasSymptoms = symptoms.isNotEmpty()
+                val hasActivities = activities.isNotEmpty()
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
                         .clip(MaterialTheme.shapes.small)
                         .background(background)
-                        .padding(6.dp)
+                        .padding(MaterialTheme.spacing.xs)
+                        .heightIn(min = dayCellHeight)
                         .pointerInput(date) {
                             detectTapGestures(
                                 onTap = { onSelectDate(date) },
@@ -474,17 +488,9 @@ private fun CalendarSection(
                         }
                 ) {
                     Text(date.dayOfMonth.toString(), style = MaterialTheme.typography.labelLarge)
-                    val badgeText = when {
-                        symptoms.isNotEmpty() && activities.isNotEmpty() -> "SA"
-                        symptoms.isNotEmpty() -> "S"
-                        activities.isNotEmpty() -> "A"
-                        else -> ""
-                    }
-                    if (badgeText.isNotEmpty()) {
-                        Text(badgeText, style = MaterialTheme.typography.labelSmall)
-                    }
+                    DayBadgeRow(showSymptom = hasSymptoms, showActivity = hasActivities)
                     if (date == today) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(MaterialTheme.spacing.xs))
                         Box(
                             modifier = Modifier
                                 .size(6.dp)
@@ -509,6 +515,44 @@ private fun CalendarSection(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DayBadgeRow(showSymptom: Boolean, showActivity: Boolean) {
+    val badges = mutableListOf<@Composable () -> Unit>()
+    if (showSymptom) badges.add { SymptomBadge() }
+    if (showActivity) badges.add { ActivityBadge() }
+    if (badges.isEmpty()) return
+    Row(
+        modifier = Modifier.padding(top = MaterialTheme.spacing.xs),
+        horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.xs),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        badges.take(2).forEach { badge -> badge() }
+        if (badges.size > 2) {
+            Text(text = "+", style = MaterialTheme.typography.labelSmall)
+        }
+    }
+}
+
+@Composable
+private fun SymptomBadge() {
+    Canvas(modifier = Modifier.size(10.dp)) {
+        drawCircle(color = MaterialTheme.colorScheme.tertiary)
+    }
+}
+
+@Composable
+private fun ActivityBadge() {
+    Canvas(modifier = Modifier.size(10.dp)) {
+        val path = Path().apply {
+            moveTo(size.width / 2f, 0f)
+            lineTo(0f, size.height)
+            lineTo(size.width, size.height)
+            close()
+        }
+        drawPath(path = path, color = MaterialTheme.colorScheme.primary)
     }
 }
 

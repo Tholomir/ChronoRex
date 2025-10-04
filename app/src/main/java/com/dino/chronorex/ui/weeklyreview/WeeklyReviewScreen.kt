@@ -1,10 +1,13 @@
-﻿package com.dino.chronorex.ui.weeklyreview
+package com.dino.chronorex.ui.weeklyreview
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -15,15 +18,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dino.chronorex.model.WeeklyReview
 import com.dino.chronorex.ui.components.ChronoRexCard
-import com.dino.chronorex.ui.components.ChronoRexPrimaryButton
+import com.dino.chronorex.ui.components.ChronoRexSecondaryButton
 import com.dino.chronorex.ui.theme.spacing
 
 @Composable
 fun WeeklyReviewScreen(review: WeeklyReview?, onBack: () -> Unit) {
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(MaterialTheme.spacing.lg),
+            .padding(MaterialTheme.spacing.lg)
+            .imePadding()
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)
     ) {
         if (review == null) {
@@ -41,7 +47,7 @@ fun WeeklyReviewScreen(review: WeeklyReview?, onBack: () -> Unit) {
         } else {
             WeeklyReviewBody(review)
         }
-        ChronoRexPrimaryButton(text = "Back", modifier = Modifier.fillMaxWidth(), onClick = onBack)
+        ChronoRexSecondaryButton(text = "Back", modifier = Modifier.fillMaxWidth(), onClick = onBack)
     }
 }
 
@@ -49,7 +55,7 @@ fun WeeklyReviewScreen(review: WeeklyReview?, onBack: () -> Unit) {
 private fun WeeklyReviewBody(review: WeeklyReview) {
     ChronoRexCard {
         Text(
-            text = "Week of ${review.startDate} – ${review.endDate}",
+            text = "Week of ${review.startDate} � ${review.endDate}",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold
         )
@@ -57,7 +63,7 @@ private fun WeeklyReviewBody(review: WeeklyReview) {
         SectionTitle("Trend highlights")
         review.trendHighlights.forEach { highlight ->
             Text(
-                text = "• $highlight",
+                text = "- $highlight",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = MaterialTheme.spacing.xs)
             )
@@ -67,7 +73,7 @@ private fun WeeklyReviewBody(review: WeeklyReview) {
             SectionTitle("Correlation signals")
             review.correlationHighlights.forEach { highlight ->
                 Text(
-                    text = "• $highlight",
+                    text = "- $highlight",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = MaterialTheme.spacing.xs)
                 )

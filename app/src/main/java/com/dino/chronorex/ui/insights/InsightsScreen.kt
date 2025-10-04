@@ -1,11 +1,14 @@
-﻿package com.dino.chronorex.ui.insights
+package com.dino.chronorex.ui.insights
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
@@ -20,15 +23,18 @@ import androidx.compose.ui.unit.dp
 import com.dino.chronorex.analytics.CorrelationInsights
 import com.dino.chronorex.analytics.TrendInsights
 import com.dino.chronorex.ui.components.ChronoRexCard
-import com.dino.chronorex.ui.components.ChronoRexPrimaryButton
+import com.dino.chronorex.ui.components.ChronoRexSecondaryButton
 import com.dino.chronorex.ui.theme.spacing
 
 @Composable
 fun InsightsScreen(state: InsightsUiState, onBack: () -> Unit) {
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(MaterialTheme.spacing.lg),
+            .padding(MaterialTheme.spacing.lg)
+            .imePadding()
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)
     ) {
         when (state) {
@@ -36,7 +42,7 @@ fun InsightsScreen(state: InsightsUiState, onBack: () -> Unit) {
             InsightsUiState.Empty -> EmptyInsightsCard()
             is InsightsUiState.Ready -> ReadyInsightsContent(state)
         }
-        ChronoRexPrimaryButton(text = "Back", modifier = Modifier.fillMaxWidth(), onClick = onBack)
+        ChronoRexSecondaryButton(text = "Back", modifier = Modifier.fillMaxWidth(), onClick = onBack)
     }
 }
 

@@ -62,6 +62,33 @@ fun ChronoRexPrimaryButton(
 }
 
 @Composable
+
+@Composable
+fun ChronoRexSecondaryButton(
+    text: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    OutlinedButton(
+        modifier = modifier,
+        onClick = onClick,
+        enabled = enabled,
+        shape = MaterialTheme.shapes.medium,
+        colors = OutlinedButtonDefaults.outlinedButtonColors(
+            contentColor = MaterialTheme.colorScheme.primary,
+            disabledContentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)),
+        contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.lg, vertical = 14.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge
+        )
+    }
+}
+
 fun ChronoRexCard(
     modifier: Modifier = Modifier,
     tonal: Boolean = false,
@@ -185,13 +212,13 @@ fun BottomQuickActionsBar(
     ) {
         ChronoRexPrimaryButton(
             text = "Symptoms",
-            modifier = Modifier.fillMaxWidth(0.45f),
+            modifier = Modifier.weight(1f),
             onClick = onLogSymptom
         )
         Spacer(modifier = Modifier.width(MaterialTheme.spacing.sm))
         ChronoRexPrimaryButton(
             text = "Activities",
-            modifier = Modifier.fillMaxWidth(0.45f),
+            modifier = Modifier.weight(1f),
             onClick = onLogActivity
         )
     }

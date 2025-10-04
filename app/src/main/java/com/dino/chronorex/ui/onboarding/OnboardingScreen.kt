@@ -1,24 +1,42 @@
 package com.dino.chronorex.ui.onboarding
 
 import android.app.TimePickerDialog
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import com.dino.chronorex.R
 import com.dino.chronorex.ui.components.ChronoRexCard
 import com.dino.chronorex.ui.components.ChronoRexPrimaryButton
+import com.dino.chronorex.ui.components.ChronoRexSecondaryButton
 import com.dino.chronorex.ui.components.ToggleRow
+import com.dino.chronorex.ui.theme.ChronoRexDinoMint
+import com.dino.chronorex.ui.theme.ChronoRexFern
+import com.dino.chronorex.ui.theme.ChronoRexLava
+import com.dino.chronorex.ui.theme.ChronoRexSkyEgg
 import com.dino.chronorex.ui.theme.spacing
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -40,9 +58,12 @@ fun OnboardingScreen(
     onNext: () -> Unit,
     onComplete: () -> Unit
 ) {
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(scrollState)
+            .imePadding()
             .padding(MaterialTheme.spacing.lg),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)
     ) {
@@ -76,9 +97,9 @@ fun OnboardingScreen(
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
             modifier = Modifier.fillMaxWidth()
         ) {
-            ChronoRexPrimaryButton(
+            ChronoRexSecondaryButton(
                 text = "Back",
-                modifier = Modifier.fillMaxWidth(0.45f),
+                modifier = Modifier.weight(1f),
                 onClick = onBack,
                 enabled = state.step != OnboardingStep.Privacy
             )
@@ -86,7 +107,7 @@ fun OnboardingScreen(
             val action = if (state.step == OnboardingStep.Ready) onComplete else onNext
             ChronoRexPrimaryButton(
                 text = primaryLabel,
-                modifier = Modifier.fillMaxWidth(0.45f),
+                modifier = Modifier.weight(1f),
                 onClick = action,
                 enabled = !state.isSaving
             )
@@ -121,11 +142,58 @@ private fun PrivacyStepContent() {
 @Composable
 private fun MascotStepContent() {
     ChronoRexCard {
-        Text("Meet ChronoRex", style = MaterialTheme.typography.titleMedium)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_chronorex_mascot),
+                contentDescription = "ChronoRex mascot",
+                modifier = Modifier
+                    .size(120.dp)
+                    .padding(bottom = MaterialTheme.spacing.sm)
+            )
+            Text(
+                text = "Meet ChronoRex",
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "A friendly dino keeps the tone light while highlighting helpful pacing patterns.",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Bone White, Dino Mint, Fern, and Lava are the core colors you will see throughout the app.",
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm)
+            ) {
+                ThemeSwatch(color = ChronoRexSkyEgg, label = "Sky Egg")
+                ThemeSwatch(color = ChronoRexDinoMint, label = "Dino Mint")
+                ThemeSwatch(color = ChronoRexFern, label = "Fern")
+                ThemeSwatch(color = ChronoRexLava, label = "Lava")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeSwatch(color: Color, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(color = color, shape = MaterialTheme.shapes.small)
+        )
         Text(
-            text = "A friendly dino keeps the tone light while highlighting helpful pacing patterns.",
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = MaterialTheme.spacing.sm)
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = MaterialTheme.spacing.xs)
         )
     }
 }
@@ -152,9 +220,9 @@ private fun ReminderStepContent(
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.sm),
             modifier = Modifier.padding(top = MaterialTheme.spacing.sm)
         ) {
-            ChronoRexPrimaryButton(
+            ChronoRexSecondaryButton(
                 text = "Choose time",
-                modifier = Modifier.fillMaxWidth(0.45f),
+                modifier = Modifier.weight(1f),
                 onClick = {
                     val base = state.reminderTime
                     TimePickerDialog(
@@ -168,7 +236,7 @@ private fun ReminderStepContent(
             )
             ChronoRexPrimaryButton(
                 text = "Use now",
-                modifier = Modifier.fillMaxWidth(0.45f),
+                modifier = Modifier.weight(1f),
                 onClick = onSetReminderToNow
             )
         }

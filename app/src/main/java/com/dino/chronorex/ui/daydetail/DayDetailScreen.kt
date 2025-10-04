@@ -2,10 +2,13 @@ package com.dino.chronorex.ui.daydetail
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Divider
@@ -29,10 +32,13 @@ fun DayDetailScreen(
     onDeleteActivity: (UUID) -> Unit,
     onBack: () -> Unit
 ) {
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(MaterialTheme.spacing.lg),
+            .padding(MaterialTheme.spacing.lg)
+            .imePadding()
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)
     ) {
         if (state.isLoading && state.date == null) {
@@ -146,7 +152,7 @@ fun DayDetailScreen(
             }
         }
 
-        ChronoRexPrimaryButton(text = "Back", onClick = onBack)
+        ChronoRexSecondaryButton(text = "Back", onClick = onBack)
     }
 }
 

@@ -5,7 +5,10 @@ import java.util.ArrayList
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import com.dino.chronorex.export.ExportResult
 import com.dino.chronorex.ui.components.ChronoRexCard
 import com.dino.chronorex.ui.components.ChronoRexPrimaryButton
+import com.dino.chronorex.ui.components.ChronoRexSecondaryButton
 import com.dino.chronorex.ui.theme.spacing
 import kotlinx.coroutines.launch
 
@@ -41,11 +45,14 @@ fun ExportScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
+        val scrollState = rememberScrollState()
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(MaterialTheme.spacing.lg),
+                .padding(MaterialTheme.spacing.lg)
+                .imePadding()
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.lg)
         ) {
             Text(
@@ -92,7 +99,7 @@ fun ExportScreen(
                     }
                 }
             )
-            ChronoRexPrimaryButton(text = "Back", modifier = Modifier.fillMaxWidth(), onClick = onBack)
+            ChronoRexSecondaryButton(text = "Back", modifier = Modifier.fillMaxWidth(), onClick = onBack)
         }
     }
 
